@@ -1,0 +1,695 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Pharm Drill</title>
+<link href="https://fonts.googleapis.com/css2?family=DM+Serif+Display&family=DM+Sans:wght@300;400;500;600&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg:       #f5f4f0;
+    --surface:  #ffffff;
+    --surface2: #f0efe9;
+    --border:   #e4e2da;
+    --text:     #1a1917;
+    --muted:    #8a8880;
+    --faint:    #c8c6be;
+
+    --adult:    #2d6a4f;
+    --adult-bg: #edf7f2;
+    --peds:     #7b4f12;
+    --peds-bg:  #fdf3e7;
+    --both:     #2c4a7c;
+    --both-bg:  #edf2fc;
+
+    --ok:       #2d6a4f;
+    --ok-bg:    #edf7f2;
+    --err:      #9b2335;
+    --err-bg:   #fceef0;
+
+    --radius:   12px;
+    --radius-sm: 8px;
+    --shadow:   0 2px 12px rgba(0,0,0,0.06), 0 1px 3px rgba(0,0,0,0.04);
+    --shadow-lg:0 8px 32px rgba(0,0,0,0.08), 0 2px 8px rgba(0,0,0,0.04);
+
+    --serif: 'DM Serif Display', serif;
+    --sans:  'DM Sans', sans-serif;
+  }
+
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: var(--sans);
+    font-size: 15px;
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    padding: 32px 16px 48px;
+  }
+
+  /* ── Header ── */
+  header {
+    width: 100%;
+    max-width: 640px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 32px;
+  }
+
+  .logo {
+    font-family: var(--serif);
+    font-size: 1.7rem;
+    color: var(--text);
+    letter-spacing: -0.01em;
+  }
+
+  .logo span {
+    font-family: var(--sans);
+    font-size: 0.7rem;
+    font-weight: 500;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    color: var(--muted);
+    display: block;
+    margin-top: 1px;
+  }
+
+  .score-pill {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 999px;
+    padding: 7px 16px;
+    font-size: 0.8rem;
+    font-weight: 500;
+    color: var(--muted);
+    box-shadow: var(--shadow);
+  }
+
+  .score-pill strong { color: var(--text); font-weight: 600; }
+
+  /* ── Mode tabs ── */
+  .tabs {
+    width: 100%;
+    max-width: 640px;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 4px;
+    display: flex;
+    gap: 4px;
+    margin-bottom: 20px;
+    box-shadow: var(--shadow);
+  }
+
+  .tab {
+    flex: 1;
+    padding: 9px 12px;
+    border: none;
+    background: transparent;
+    border-radius: calc(var(--radius) - 2px);
+    font-family: var(--sans);
+    font-size: 0.82rem;
+    font-weight: 500;
+    color: var(--muted);
+    cursor: pointer;
+    transition: background 0.18s, color 0.18s;
+    letter-spacing: 0.01em;
+  }
+
+  .tab:hover { background: var(--surface2); color: var(--text); }
+
+  .tab.active[data-mode="adult"] { background: var(--adult-bg); color: var(--adult); }
+  .tab.active[data-mode="peds"]  { background: var(--peds-bg);  color: var(--peds); }
+  .tab.active[data-mode="both"]  { background: var(--both-bg);  color: var(--both); }
+
+  /* ── Progress ── */
+  .progress-track {
+    width: 100%;
+    max-width: 640px;
+    height: 3px;
+    background: var(--border);
+    border-radius: 999px;
+    margin-bottom: 24px;
+    overflow: hidden;
+  }
+
+  .progress-fill {
+    height: 100%;
+    background: var(--faint);
+    border-radius: 999px;
+    transition: width 0.4s cubic-bezier(.4,0,.2,1);
+  }
+
+  .progress-fill.adult { background: var(--adult); }
+  .progress-fill.peds  { background: var(--peds); }
+  .progress-fill.both  { background: var(--both); }
+
+  /* ── Stats row ── */
+  .stats {
+    width: 100%;
+    max-width: 640px;
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 10px;
+    margin-bottom: 20px;
+  }
+
+  .stat {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-sm);
+    padding: 12px 16px;
+    text-align: center;
+    box-shadow: var(--shadow);
+  }
+
+  .stat .val {
+    font-family: var(--serif);
+    font-size: 1.6rem;
+    color: var(--text);
+    line-height: 1;
+    display: block;
+    margin-bottom: 3px;
+  }
+
+  .stat .lbl {
+    font-size: 0.7rem;
+    font-weight: 500;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: var(--muted);
+  }
+
+  /* ── Main card ── */
+  .card {
+    width: 100%;
+    max-width: 640px;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 36px 36px 28px;
+    margin-bottom: 16px;
+    box-shadow: var(--shadow-lg);
+    transition: box-shadow 0.2s;
+    position: relative;
+    overflow: hidden;
+  }
+
+  .card::after {
+    content: '';
+    position: absolute;
+    top: 0; left: 0; right: 0;
+    height: 3px;
+    border-radius: var(--radius) var(--radius) 0 0;
+    background: var(--faint);
+    transition: background 0.3s;
+  }
+
+  .card.adult-mode::after { background: var(--adult); }
+  .card.peds-mode::after  { background: var(--peds); }
+  .card.both-mode::after  { background: var(--both); }
+
+  .dose-label {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 4px 10px;
+    border-radius: 999px;
+    font-size: 0.7rem;
+    font-weight: 600;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    margin-bottom: 20px;
+    border: 1px solid transparent;
+  }
+
+  .dose-label.adult { background: var(--adult-bg); color: var(--adult); border-color: rgba(45,106,79,0.2); }
+  .dose-label.peds  { background: var(--peds-bg);  color: var(--peds);  border-color: rgba(123,79,18,0.2); }
+  .dose-label.both  { background: var(--both-bg);  color: var(--both);  border-color: rgba(44,74,124,0.2); }
+
+  .dot {
+    width: 6px; height: 6px;
+    border-radius: 50%;
+    flex-shrink: 0;
+  }
+
+  .adult .dot { background: var(--adult); }
+  .peds  .dot { background: var(--peds); }
+  .both  .dot { background: var(--both); }
+
+  .drug-name {
+    font-family: var(--serif);
+    font-size: clamp(2rem, 5.5vw, 2.8rem);
+    color: var(--text);
+    line-height: 1.05;
+    margin-bottom: 10px;
+    letter-spacing: -0.01em;
+  }
+
+  .drug-pkg {
+    font-size: 0.8rem;
+    color: var(--muted);
+    font-weight: 400;
+    margin-bottom: 20px;
+  }
+
+  .question {
+    font-size: 0.85rem;
+    color: var(--muted);
+    font-weight: 400;
+    border-top: 1px solid var(--border);
+    padding-top: 16px;
+  }
+
+  /* ── Answer row ── */
+  .answer-row {
+    width: 100%;
+    max-width: 640px;
+    display: flex;
+    gap: 8px;
+    margin-bottom: 12px;
+  }
+
+  .ans-input {
+    flex: 1;
+    background: var(--surface);
+    border: 1.5px solid var(--border);
+    border-radius: var(--radius-sm);
+    color: var(--text);
+    font-family: var(--sans);
+    font-size: 0.95rem;
+    font-weight: 400;
+    padding: 13px 16px;
+    outline: none;
+    transition: border-color 0.15s, box-shadow 0.15s;
+    box-shadow: var(--shadow);
+  }
+
+  .ans-input::placeholder { color: var(--faint); }
+  .ans-input:focus { border-color: #94a3b8; box-shadow: 0 0 0 3px rgba(148,163,184,0.15); }
+  .ans-input.ok  { border-color: var(--ok);  box-shadow: 0 0 0 3px rgba(45,106,79,0.1); }
+  .ans-input.err { border-color: var(--err); box-shadow: 0 0 0 3px rgba(155,35,53,0.1); }
+
+  .check-btn {
+    background: var(--text);
+    color: #fff;
+    border: none;
+    border-radius: var(--radius-sm);
+    font-family: var(--sans);
+    font-size: 0.85rem;
+    font-weight: 600;
+    letter-spacing: 0.04em;
+    padding: 13px 22px;
+    cursor: pointer;
+    transition: opacity 0.15s, transform 0.1s;
+    white-space: nowrap;
+  }
+
+  .check-btn:hover { opacity: 0.85; }
+  .check-btn:active { transform: scale(0.97); }
+
+  /* ── Feedback ── */
+  .feedback {
+    width: 100%;
+    max-width: 640px;
+    border-radius: var(--radius-sm);
+    padding: 13px 16px;
+    font-size: 0.85rem;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin-bottom: 12px;
+    border: 1px solid var(--border);
+    background: var(--surface2);
+    color: var(--muted);
+    min-height: 48px;
+    transition: all 0.2s;
+  }
+
+  .feedback.ok  { background: var(--ok-bg);  border-color: rgba(45,106,79,0.25);  color: var(--ok); }
+  .feedback.err { background: var(--err-bg); border-color: rgba(155,35,53,0.25); color: var(--err); }
+
+  .feedback .ans-text { color: var(--text); font-weight: 500; }
+  .fb-icon { font-size: 1rem; flex-shrink: 0; }
+
+  /* ── Controls ── */
+  .controls {
+    width: 100%;
+    max-width: 640px;
+    display: flex;
+    gap: 8px;
+    margin-bottom: 28px;
+  }
+
+  .ctrl {
+    flex: 1;
+    padding: 10px;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-sm);
+    font-family: var(--sans);
+    font-size: 0.8rem;
+    font-weight: 500;
+    color: var(--muted);
+    cursor: pointer;
+    transition: all 0.15s;
+    box-shadow: var(--shadow);
+  }
+
+  .ctrl:hover { border-color: #b0aca2; color: var(--text); }
+
+  .ctrl.next {
+    background: var(--text);
+    border-color: var(--text);
+    color: #fff;
+  }
+
+  .ctrl.next:hover { opacity: 0.85; }
+  .ctrl.next:disabled { opacity: 0.35; cursor: default; }
+
+  /* ── Reference table ── */
+  .ref-section {
+    width: 100%;
+    max-width: 640px;
+  }
+
+  .ref-toggle-btn {
+    background: none;
+    border: none;
+    font-family: var(--sans);
+    font-size: 0.78rem;
+    font-weight: 500;
+    color: var(--muted);
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    padding: 4px 0;
+    margin-bottom: 10px;
+    transition: color 0.15s;
+  }
+
+  .ref-toggle-btn:hover { color: var(--text); }
+
+  .chevron {
+    display: inline-block;
+    transition: transform 0.2s;
+    font-style: normal;
+  }
+
+  .chevron.open { transform: rotate(90deg); }
+
+  .ref-wrap {
+    display: none;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    overflow: hidden;
+    box-shadow: var(--shadow);
+  }
+
+  .ref-wrap.open { display: block; }
+
+  table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 0.8rem;
+  }
+
+  thead th {
+    background: var(--surface2);
+    color: var(--muted);
+    font-weight: 600;
+    font-size: 0.68rem;
+    letter-spacing: 0.09em;
+    text-transform: uppercase;
+    padding: 10px 14px;
+    text-align: left;
+    border-bottom: 1px solid var(--border);
+  }
+
+  tbody td {
+    padding: 9px 14px;
+    border-bottom: 1px solid var(--border);
+    color: var(--text);
+    vertical-align: top;
+    line-height: 1.5;
+  }
+
+  tbody tr:last-child td { border-bottom: none; }
+  tbody tr:hover td { background: var(--surface2); }
+  tbody td:first-child { font-weight: 500; }
+
+  @keyframes fadeUp {
+    from { opacity: 0; transform: translateY(10px); }
+    to   { opacity: 1; transform: translateY(0); }
+  }
+
+  .card { animation: fadeUp 0.25s cubic-bezier(.4,0,.2,1); }
+</style>
+</head>
+<body>
+
+<header>
+  <div class="logo">
+    Pharm Drill
+    <span>EMS Pharmacology Practice</span>
+  </div>
+  <div class="score-pill" id="score-pill"><strong>0</strong> / 0 correct</div>
+</header>
+
+<div class="tabs">
+  <button class="tab active" data-mode="adult" onclick="setMode('adult')">Adult Doses</button>
+  <button class="tab" data-mode="peds" onclick="setMode('peds')">Peds Doses</button>
+  <button class="tab" data-mode="both" onclick="setMode('both')">Mixed</button>
+</div>
+
+<div class="progress-track"><div class="progress-fill adult" id="prog"></div></div>
+
+<div class="stats">
+  <div class="stat"><span class="val" id="s-correct">0</span><span class="lbl">Correct</span></div>
+  <div class="stat"><span class="val" id="s-wrong">0</span><span class="lbl">Missed</span></div>
+  <div class="stat"><span class="val" id="s-streak">0</span><span class="lbl">Streak</span></div>
+</div>
+
+<div class="card adult-mode" id="card">
+  <div class="dose-label adult" id="dose-label"><span class="dot"></span><span id="label-text">Adult Dose</span></div>
+  <div class="drug-name" id="drug-name">—</div>
+  <div class="drug-pkg" id="drug-pkg">—</div>
+  <div class="question" id="question">What is the adult dose?</div>
+</div>
+
+<div class="answer-row">
+  <input class="ans-input" id="ans" type="text" placeholder="Enter dose…" autocomplete="off" />
+  <button class="check-btn" onclick="check()">Check</button>
+</div>
+
+<div class="feedback" id="fb">
+  <span class="fb-icon">💊</span>
+  <span>Type the dose above and press Check — or hit Enter.</span>
+</div>
+
+<div class="controls">
+  <button class="ctrl" onclick="reveal()">Reveal</button>
+  <button class="ctrl" onclick="skip()">Skip</button>
+  <button class="ctrl next" id="next-btn" onclick="next()" disabled>Next →</button>
+</div>
+
+<div class="ref-section">
+  <button class="ref-toggle-btn" onclick="toggleRef()">
+    <i class="chevron" id="chev">▶</i> Reference table
+  </button>
+  <div class="ref-wrap" id="ref-wrap">
+    <table>
+      <thead><tr><th>Medication</th><th>Adult</th><th>Pediatric</th><th>Packaging</th></tr></thead>
+      <tbody id="ref-body"></tbody>
+    </table>
+  </div>
+</div>
+
+<script>
+const MEDS = [
+  { name:"Adenosine",                         adult:"12mg",                                  peds:"0.1mg/kg (1st), 0.2mg/kg (2nd)",         pkg:"6mg / 2ml" },
+  { name:"Albuterol",                         adult:"2.5mg",                                 peds:"2.5mg (≥1 y/o), 1.25mg (<1 y/o)",        pkg:"2.5mg / 3ml" },
+  { name:"Amiodarone",                        adult:"300mg (1st), 150mg (2nd)",              peds:"5mg/kg",                                  pkg:"150mg / 3ml" },
+  { name:"Atropine",                          adult:"1mg",                                   peds:"0.02mg/kg",                               pkg:"1mg / 10ml" },
+  { name:"Atrovent",                          adult:"0.5mg",                                 peds:"0.5mg (≥8 y/o), 0.25mg (<8 y/o)",        pkg:"0.5mg / 2.5ml" },
+  { name:"Benadryl",                          adult:"50mg",                                  peds:"1mg/kg",                                  pkg:"50mg / 1ml" },
+  { name:"Calcium Chloride",                  adult:"1 gram",                                peds:"20mg/kg",                                 pkg:"1G / 10ml" },
+  { name:"Dextrose 50%",                      adult:"25 grams",                              peds:"N/A (adults only)",                       pkg:"25G / 50ml" },
+  { name:"Dextrose 25%",                      adult:"N/A (peds only)",                       peds:"2ml/kg (8 y/o to 1 y/o)",                 pkg:"25G/50ml — waste 25ml, reconstitute w/ 25ml NS" },
+  { name:"Dextrose 10%",                      adult:"N/A (peds only)",                       peds:"For PT <1 y/o",                           pkg:"25G/50ml — waste 40ml, reconstitute w/ 40ml NS" },
+  { name:"Epinephrine 1:1,000",               adult:"0.3mg",                                 peds:"0.01mg/kg",                               pkg:"1mg / 1ml" },
+  { name:"Epinephrine 1:10,000",              adult:"1mg",                                   peds:"0.01mg/kg",                               pkg:"1mg / 10ml" },
+  { name:"Epinephrine 1:100,000 (Push Pressor)", adult:"0.1mg max, 1ml/min",               peds:"0.1mg max, 1ml/min",                      pkg:"Waste 9ml, reconstitute w/ 9ml NS" },
+  { name:"Etomidate",                         adult:"0.3mg/kg (max 30mg)",                   peds:"0.3mg/kg (max 30mg)",                     pkg:"20mg / 10ml" },
+  { name:"Fentanyl",                          adult:"100mcg",                                peds:"0.5mcg/kg IV/IO over 2 min; 1.5mcg/kg IN/IM", pkg:"100mcg / 2ml" },
+  { name:"Glucagon",                          adult:"1mg/min IV/IO (max 10mg)",              peds:"1mg/min IV/IO (max 5mg); 0.5mg/min if <20kg", pkg:"1mg / unit" },
+  { name:"Ketamine",                          adult:"2mg/kg",                                peds:"1mg/kg",                                  pkg:"500mg / 5ml" },
+  { name:"Lasix",                             adult:"40mg (80mg if previously prescribed)",  peds:"N/A",                                     pkg:"40mg / 4ml" },
+  { name:"Magnesium Sulfate",                 adult:"2G (4G for eclampsia)",                 peds:"50mg/kg",                                 pkg:"1G / 2ml" },
+  { name:"Narcan",                            adult:"2.0mg",                                 peds:"0.1mg/kg",                                pkg:"2mg / 2ml" },
+  { name:"Rocuronium",                        adult:"1mg/kg",                                peds:"1mg/kg",                                  pkg:"100mg / 10ml" },
+  { name:"Sodium Bicarbonate",                adult:"50meq of 8.4%",                         peds:"1meq/kg of 4.2%",                         pkg:"50meq/50ml — waste 25ml, reconstitute w/ 25ml NS" },
+  { name:"Solumedrol",                        adult:"125mg",                                 peds:"2mg/kg",                                  pkg:"125mg / 2ml" },
+  { name:"TXA",                               adult:"2 grams",                               peds:"15mg/kg",                                 pkg:"1G / 10ml" },
+  { name:"Versed",                            adult:"5mg",                                   peds:"0.1mg/kg",                                pkg:"10mg / 2ml" },
+];
+
+let mode = 'adult', queue = [], cur = null, answered = false;
+let correct = 0, wrong = 0, streak = 0, total = 0;
+
+function setMode(m) {
+  mode = m;
+  document.querySelectorAll('.tab').forEach(b => b.classList.remove('active'));
+  document.querySelector(`[data-mode="${m}"]`).classList.add('active');
+  const pf = document.getElementById('prog');
+  pf.className = 'progress-fill ' + (m === 'both' ? 'both' : m);
+  resetSession();
+}
+
+function shuffle(a) {
+  for (let i = a.length-1; i > 0; i--) {
+    const j = Math.floor(Math.random()*(i+1));
+    [a[i],a[j]] = [a[j],a[i]];
+  }
+  return a;
+}
+
+function resetSession() {
+  correct = wrong = streak = total = 0;
+  queue = shuffle([...MEDS]);
+  updateStats();
+  loadCard();
+}
+
+function loadCard() {
+  if (!queue.length) queue = shuffle([...MEDS]);
+
+  let cm = mode === 'both' ? (Math.random()<.5 ? 'adult' : 'peds') : mode;
+  cur = { med: queue.pop(), cm };
+  answered = false;
+
+  const card = document.getElementById('card');
+  card.className = 'card ' + cm + '-mode';
+
+  const dl = document.getElementById('dose-label');
+  dl.className = 'dose-label ' + (mode === 'both' ? 'both' : cm);
+  document.getElementById('label-text').textContent = cm === 'adult' ? 'Adult Dose' : 'Pediatric Dose';
+
+  document.getElementById('drug-name').textContent = cur.med.name;
+  document.getElementById('drug-pkg').textContent = '📦 ' + cur.med.pkg;
+  document.getElementById('question').textContent =
+    cm === 'adult' ? 'What is the adult dose?' : 'What is the pediatric dose?';
+
+  const inp = document.getElementById('ans');
+  inp.value = ''; inp.className = 'ans-input'; inp.disabled = false; inp.focus();
+
+  const fb = document.getElementById('fb');
+  fb.className = 'feedback';
+  fb.innerHTML = '<span class="fb-icon">💊</span><span>Type the dose above and press Check — or hit Enter.</span>';
+  document.getElementById('next-btn').disabled = true;
+
+  const pct = total ? Math.round((total / (total + queue.length + 1)) * 100) : 0;
+  document.getElementById('prog').style.width = pct + '%';
+
+  card.style.animation = 'none';
+  requestAnimationFrame(() => { card.style.animation = ''; });
+}
+
+function getAnswer() { return cur.cm === 'adult' ? cur.med.adult : cur.med.peds; }
+
+function fuzzy(user, correct) {
+  const n = s => s.toLowerCase().replace(/\s+/g,' ').trim();
+  const u = n(user), c = n(correct);
+  if (u === c || c.includes(u)) return true;
+  const nums = s => s.match(/[\d.]+\s*(?:mg|mcg|g|gram|ml|meq|unit|kg|%)?(?:\/kg)?/g) || [];
+  const ut = nums(u), ct = nums(c);
+  if (ut.length && ct.length) {
+    const norm = t => t.replace(/\s/g,'');
+    const cs = ct.map(norm);
+    return ut.every(t => cs.some(cx => cx.includes(norm(t)) || norm(t).includes(cx)));
+  }
+  return false;
+}
+
+function check() {
+  if (answered) { next(); return; }
+  const val = document.getElementById('ans').value.trim();
+  if (!val) return;
+
+  const ans = getAnswer();
+  const ok = fuzzy(val, ans);
+  answered = true; total++;
+
+  const inp = document.getElementById('ans');
+  const fb  = document.getElementById('fb');
+  inp.disabled = true;
+
+  if (ok) {
+    correct++; streak++;
+    inp.className = 'ans-input ok';
+    fb.className  = 'feedback ok';
+    fb.innerHTML  = `<span class="fb-icon">✓</span><span>Correct — <span class="ans-text">${ans}</span></span>`;
+  } else {
+    wrong++; streak = 0;
+    inp.className = 'ans-input err';
+    fb.className  = 'feedback err';
+    fb.innerHTML  = `<span class="fb-icon">✗</span><span>Incorrect. Answer: <span class="ans-text">${ans}</span></span>`;
+  }
+
+  document.getElementById('next-btn').disabled = false;
+  document.getElementById('score-pill').innerHTML = `<strong>${correct}</strong> / ${total} correct`;
+  updateStats();
+}
+
+function reveal() {
+  if (answered) { next(); return; }
+  answered = true; total++; wrong++; streak = 0;
+  const ans = getAnswer();
+  const inp = document.getElementById('ans');
+  const fb  = document.getElementById('fb');
+  inp.className = 'ans-input err'; inp.disabled = true;
+  fb.className  = 'feedback err';
+  fb.innerHTML  = `<span class="fb-icon">👁</span><span>Answer: <span class="ans-text">${ans}</span></span>`;
+  document.getElementById('next-btn').disabled = false;
+  document.getElementById('score-pill').innerHTML = `<strong>${correct}</strong> / ${total} correct`;
+  updateStats();
+}
+
+function skip() { queue.unshift(cur.med); loadCard(); }
+function next()  { loadCard(); }
+
+function updateStats() {
+  document.getElementById('s-correct').textContent = correct;
+  document.getElementById('s-wrong').textContent   = wrong;
+  document.getElementById('s-streak').textContent  = streak;
+}
+
+function toggleRef() {
+  const wrap = document.getElementById('ref-wrap');
+  const chev = document.getElementById('chev');
+  wrap.classList.toggle('open');
+  chev.classList.toggle('open');
+}
+
+function buildRef() {
+  const tbody = document.getElementById('ref-body');
+  MEDS.forEach(m => {
+    const tr = document.createElement('tr');
+    tr.innerHTML = `<td>${m.name}</td><td>${m.adult}</td><td>${m.peds}</td><td>${m.pkg}</td>`;
+    tbody.appendChild(tr);
+  });
+}
+
+document.getElementById('ans').addEventListener('keydown', e => { if (e.key === 'Enter') check(); });
+
+buildRef();
+resetSession();
+</script>
+</body>
+</html>
